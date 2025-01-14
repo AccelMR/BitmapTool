@@ -193,22 +193,6 @@ class BitmapImage
  private:
 
   /*
-   * Write a pixel to the buffer
-   * @param buffer: buffer to write the pixel to
-   * @param color: color of the pixel
-  */
-  void 
-  writePixel(uint8* buffer, const Color& color);
-
-  /*
-   * Read a pixel from the buffer
-   * @param buffer: buffer to read the pixel from
-   * @return: color of the pixel
-  */
-  Color
-  readPixel(const uint8* buffer) const;
-
-  /*
    * Calculate the source coordinates for a given destination coordinate
    * @param x: x-coordinate of the destination
    * @param y: y-coordinate of the destination

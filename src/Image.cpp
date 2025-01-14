@@ -6,6 +6,76 @@
 #include <algorithm>
 #include <math.h>
 
+namespace ImageHelpers
+{
+/*
+ */
+void 
+writePixel(uint8 *buffer, const Color &color, const BPP m_bpp)
+{
+  switch (m_bpp)
+  {
+  case BPP::BPP_16:
+  {
+    uint16 pixel = color.to16Bit(true);
+    buffer[0] = pixel & 0xFF;
+    buffer[1] = (pixel >> 8) & 0xFF;
+    break;
+  }
+  case BPP::BPP_24:
+    buffer[0] = color.b;
+    buffer[1] = color.g;
+    buffer[2] = color.r;
+    break;
+  case BPP::BPP_32:
+    buffer[0] = color.b;
+    buffer[1] = color.g;
+    buffer[2] = color.r;
+    buffer[3] = color.a;
+    break;
+  default:
+    std::cerr << "BitmapImage::writePixel() " << "Error: Unsupported BPP format in writePixel." << std::endl;
+    break;
+  }
+}
+
+/*
+ */
+Color 
+readPixel(const uint8 *buffer, const BPP m_bpp)
+{
+  switch (m_bpp)
+  {
+  case BPP::BPP_16:
+    return Color::from16Bit(*reinterpret_cast<const uint16 *>(buffer), true);
+    break;
+  case BPP::BPP_24:
+  {
+    Color color;
+    color.b = buffer[0];
+    color.g = buffer[1];
+    color.r = buffer[2];
+    return color;
+    break;
+  }
+  case BPP::BPP_32:
+  {
+    Color color;
+    color.b = buffer[0];
+    color.g = buffer[1];
+    color.r = buffer[2];
+    color.a = buffer[3];
+    return color;
+    break;
+  }
+  default:
+    std::cerr << "BitmapImage::readPixel() " << "Error: Unsupported BPP format in readPixel." << std::endl;
+    return Color();
+    break;
+  }
+}
+}
+
 /*
  */
 BitmapImage::~BitmapImage()
@@ -45,18 +115,19 @@ BitmapImage::create(uint32 width, uint32 height, BPP bpp)
 void 
 BitmapImage::clear(const Color &color)
 {
-  std::vector<uint8> rowBuffer(m_pitch, 0);
-
-  for (int32 x = 0; x < m_width; ++x)
-  {
-    uint8 *buffer = rowBuffer.data() + x * m_bytesPerPixel;
-    writePixel(buffer, color);
-  }
+  uint8 *buffer = new uint8[m_bytesPerPixel];
+  ImageHelpers::writePixel(buffer, color, m_bpp);
 
   for (int32 y = 0; y < m_height; ++y)
   {
-    std::memcpy(m_pixels + y * m_pitch, rowBuffer.data(), m_pitch);
+    uint8 *row = m_pixels + y * m_pitch;
+    for (int32 x = 0; x < m_width; ++x)
+    {
+      std::memcpy(row + x * m_bytesPerPixel, buffer, m_bytesPerPixel);
+    }
   }
+
+  delete[] buffer;
 }
 
 /*
@@ -71,7 +142,7 @@ BitmapImage::getPixel(uint32 x, uint32 y) const
   }
 
   const uint8 *buffer = m_pixels + y * m_pitch + x * m_bytesPerPixel;
-  return readPixel(buffer);
+  return ImageHelpers::readPixel(buffer, m_bpp);
 }
 
 /*
@@ -86,7 +157,7 @@ BitmapImage::setPixel(uint32 x, uint32 y, const Color &color)
   }
 
   uint8 *buffer = m_pixels + y * m_pitch + x * m_bytesPerPixel;
-  writePixel(buffer, color);
+  ImageHelpers::writePixel(buffer, color, m_bpp);
 }
 
 /*
@@ -417,71 +488,4 @@ BitmapImage::resize(uint32 width, uint32 height)
   std::swap(m_bpp, temp.m_bpp);
   std::swap(m_bytesPerPixel, temp.m_bytesPerPixel);
   std::swap(m_pitch, temp.m_pitch);
-}
-
-/*
- */
-void 
-BitmapImage::writePixel(uint8 *buffer, const Color &color)
-{
-  switch (m_bpp)
-  {
-  case BPP::BPP_16:
-  {
-    uint16 pixel = color.to16Bit(true);
-    buffer[0] = pixel & 0xFF;
-    buffer[1] = (pixel >> 8) & 0xFF;
-    break;
-  }
-  case BPP::BPP_24:
-    buffer[0] = color.b;
-    buffer[1] = color.g;
-    buffer[2] = color.r;
-    break;
-  case BPP::BPP_32:
-    buffer[0] = color.b;
-    buffer[1] = color.g;
-    buffer[2] = color.r;
-    buffer[3] = color.a;
-    break;
-  default:
-    std::cerr << "BitmapImage::writePixel() " << "Error: Unsupported BPP format in writePixel." << std::endl;
-    break;
-  }
-}
-
-/*
- */
-Color 
-BitmapImage::readPixel(const uint8 *buffer) const
-{
-  switch (m_bpp)
-  {
-  case BPP::BPP_16:
-    return Color::from16Bit(*reinterpret_cast<const uint16 *>(buffer), true);
-    break;
-  case BPP::BPP_24:
-  {
-    Color color;
-    color.b = buffer[0];
-    color.g = buffer[1];
-    color.r = buffer[2];
-    return color;
-    break;
-  }
-  case BPP::BPP_32:
-  {
-    Color color;
-    color.b = buffer[0];
-    color.g = buffer[1];
-    color.r = buffer[2];
-    color.a = buffer[3];
-    return color;
-    break;
-  }
-  default:
-    std::cerr << "BitmapImage::readPixel() " << "Error: Unsupported BPP format in readPixel." << std::endl;
-    return Color();
-    break;
-  }
 }
