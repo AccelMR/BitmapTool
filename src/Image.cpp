@@ -98,6 +98,7 @@ BitmapImage::create(uint32 width, uint32 height, BPP bpp)
   if (m_pixels)
   {
     delete[] m_pixels;
+    m_pixels = nullptr;
   }
 
   m_width = width;
@@ -115,19 +116,17 @@ BitmapImage::create(uint32 width, uint32 height, BPP bpp)
 void 
 BitmapImage::clear(const Color &color)
 {
-  uint8 *buffer = new uint8[m_bytesPerPixel];
-  ImageHelpers::writePixel(buffer, color, m_bpp);
+  std::vector<uint8> buffer(m_bytesPerPixel);
+  ImageHelpers::writePixel(buffer.data(), color, m_bpp);
 
   for (int32 y = 0; y < m_height; ++y)
   {
     uint8 *row = m_pixels + y * m_pitch;
     for (int32 x = 0; x < m_width; ++x)
     {
-      std::memcpy(row + x * m_bytesPerPixel, buffer, m_bytesPerPixel);
+      std::memcpy(row + x * m_bytesPerPixel, buffer.data(), m_bytesPerPixel);
     }
   }
-
-  delete[] buffer;
 }
 
 /*
@@ -150,7 +149,7 @@ BitmapImage::getPixel(uint32 x, uint32 y) const
 void 
 BitmapImage::setPixel(uint32 x, uint32 y, const Color &color)
 {
-  if (x < 0 || x >= m_width || y < 0 || y >= m_height)
+  if (x >= m_width || y >= m_height)
   {
     std::cerr << "BitmapImage::setPixel() " << "Error: Invalid pixel coordinates (" << x << ", " << y << ")" << std::endl;
     return;
